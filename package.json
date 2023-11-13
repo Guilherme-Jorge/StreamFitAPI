@@ -1,0 +1,11 @@
+{
+  "name": "streamfitapi",
+  "version": "1.0.0",
+  "description": "The API for StreamFit app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guilherme Jorge",
+  "license": "ISC"
+}
