@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import User from "../models/user";
+import { createConnection } from "net";
 
 // Global Config
 export const usersRouter = express.Router();
@@ -14,6 +15,9 @@ type CustomResponse = {
   message: string | unknown;
   payload: unknown;
 };
+
+const host: string = "localhost";
+const port: number = 12345;
 
 // GET
 usersRouter.get("/", async (_req: Request, res: Response) => {
@@ -63,6 +67,32 @@ usersRouter.post("/", async (req: Request, res: Response) => {
     if (e instanceof Error) res.status(400).send(e.message);
   }
 });
+
+usersRouter.post("/teste", async (req: Request, res: Response) => {
+  try {
+    const pwd = req.body.pwd;
+    let newPwd: string[];
+    
+    const client = createConnection(port, host, () => {
+      client.write(`ENCRYPT:${pwd}\n`);
+      // client.write(`DECRYPT:${pwd}\n`);
+    });
+
+    client.on('data', data => {
+      newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+      console.log(newPwd[0]);
+      client.write("exit\n");
+    });
+
+    // console.log(newPwd[0]);
+    
+    // res.status(200).json({password: newPwd[0]});
+    res.status(200).json();
+  } catch (e) {
+    console.error(e);
+    if (e instanceof Error) res.status(400).send(e.message);
+  }
+})
 
 // PUT
 usersRouter.put("/:id", async (req: Request, res: Response) => {
