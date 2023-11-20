@@ -10,7 +10,7 @@ connectToDatabase()
     app.use("/users", usersRouter);
 
     app.listen(port, () => {
-      console.log(`Server started at http://localhost:${port}`);
+      console.log(`API started at http://localhost:${port}`);
     });
   })
   .catch((e: Error) => {
