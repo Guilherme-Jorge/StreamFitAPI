@@ -3,7 +3,10 @@ import * as mongoDB from "mongodb";
 import * as dotenv from "dotenv";
 
 // Global Variables
-export const collections: { users?: mongoDB.Collection } = {};
+export const collections: {
+   users?: mongoDB.Collection,
+   messages?: mongoDB.Collection
+  } = {};
 
 // Initialize Connection
 export async function connectToDatabase() {
@@ -103,7 +106,44 @@ export async function connectToDatabase() {
 
   collections.users = usersCollection;
 
+  await db.command({
+    collMod: process.env.MESSAGES_COLLECTION_NAME,
+    validator: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["sendId", "recieveId", "message"],
+        additionalProperties: false,
+        properties: {
+          _id: {},
+          sendId: {
+            bsonType: "string",
+            description:
+              "'sendId' is required and is a string",
+          },
+          recieveId: {
+            bsonType: "string",
+            description: "'recieveId' is required and is a string",
+          },
+          messageId: {
+            bsonType: "string",
+            description: "'messageId' is required and is a string",
+          },
+          sentAt: {
+            bsonType: "date",
+            description: "'sentAt' is optional and is a date",
+          },
+        },
+      },
+    },
+  });
+
+  const messagesCollection: mongoDB.Collection = db.collection(
+    process.env.MESSAGES_COLLECTION_NAME!
+  );
+
+  collections.messages = messagesCollection;
+
   console.log(
-    `Successfully connected to database: ${db.databaseName} and collection: ${usersCollection.collectionName}`
+    `Successfully connected to database: ${db.databaseName} and collections: ${usersCollection.collectionName}, ${messagesCollection.collectionName}`
   );
 }
