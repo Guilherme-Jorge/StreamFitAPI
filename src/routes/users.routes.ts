@@ -32,7 +32,7 @@ usersRouter.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-usersRouter.get("/:id", async (req: Request, res: Response) => {
+usersRouter.get("/user/:id", async (req: Request, res: Response) => {
   const id = req?.params?.id;
 
   try {
@@ -49,67 +49,118 @@ usersRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+usersRouter.get("/login/", async (req: Request, res: Response) => {
+  try {
+    const client = createConnection(port, host, () => {
+      client.write(`ENCRYPT:${req.body.pwd}\n`);
+    });
+
+    client.on("data", async (data) => {
+      const pwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+
+      const user = (await collections.users!.findOne({
+        email: req.body.email,
+        pwd: pwd[0],
+      })) as unknown as User;
+
+      if (user) {
+        res.status(200).send({ id: user._id });
+      }
+    });
+  } catch (e) {
+    res
+      .status(404)
+      .send(`Unable to find matching user with email: ${req.params.email}`);
+  }
+});
+
+usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
+  const id = req?.params?.id;
+
+  try {
+    const query = { _id: new ObjectId(id) };
+    const user = (await collections.users!.findOne(query)) as unknown as User;
+
+    const client = createConnection(port, host, () => {
+      client.write(`DECRYPT:${user.pwd}\n`);
+    });
+
+    client.on("data", async (data) => {
+      const pwdDecrypted = data.toString().split(/(?:\r\n|\r|\n)/g);
+      user.pwd = pwdDecrypted[0];
+
+      client.write("exit\n");
+
+      if (user) {
+        res.status(200).send(user);
+      }
+    });
+  } catch (e) {
+    res
+      .status(404)
+      .send(`Unable to find matching document with id: ${req.params.id}`);
+  }
+});
+
 // POST
 usersRouter.post("/", async (req: Request, res: Response) => {
   try {
-    req.body.createdAt = new Date();
-    req.body.updatedAt = new Date();
-    const newUser = req.body as User;
-    const result = await collections.users!.insertOne(newUser);
+    const client = createConnection(port, host, () => {
+      client.write(`ENCRYPT:${req.body.pwd}\n`);
+    });
 
-    result
-      ? res
-          .status(201)
-          .send(`Successfully created a new user with id ${result.insertedId}`)
-      : res.status(500).send("Failed to create a new user.");
+    client.on("data", async (data) => {
+      const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+      req.body.pwd = newPwd[0];
+
+      req.body.createdAt = new Date();
+      req.body.updatedAt = new Date();
+
+      const newUser = req.body as User;
+      const result = await collections.users!.insertOne(newUser);
+
+      client.write("exit\n");
+
+      result
+        ? res
+            .status(201)
+            .send(
+              `Successfully created a new user with id ${result.insertedId}`
+            )
+        : res.status(500).send("Failed to create a new user.");
+    });
   } catch (e) {
     console.error(e);
     if (e instanceof Error) res.status(400).send(e.message);
   }
 });
 
-usersRouter.post("/teste", async (req: Request, res: Response) => {
-  try {
-    const pwd = req.body.pwd;
-    let newPwd: string[];
-    
-    const client = createConnection(port, host, () => {
-      client.write(`ENCRYPT:${pwd}\n`);
-      // client.write(`DECRYPT:${pwd}\n`);
-    });
-
-    client.on('data', data => {
-      newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
-      console.log(newPwd[0]);
-      client.write("exit\n");
-    });
-
-    // console.log(newPwd[0]);
-    
-    // res.status(200).json({password: newPwd[0]});
-    res.status(200).json();
-  } catch (e) {
-    console.error(e);
-    if (e instanceof Error) res.status(400).send(e.message);
-  }
-})
-
 // PUT
 usersRouter.put("/:id", async (req: Request, res: Response) => {
   const id = req?.params?.id;
 
   try {
-    req.body.updatedAt = new Date();
-    const updatedUser: User = req.body as User;
-    const query = { _id: new ObjectId(id) };
-
-    const result = await collections.users!.updateOne(query, {
-      $set: updatedUser,
+    const client = createConnection(port, host, () => {
+      client.write(`ENCRYPT:${req.body.pwd}\n`);
     });
 
-    result
-      ? res.status(200).send(`Successfully updated user with id ${id}`)
-      : res.status(304).send(`User with id: ${id} not updated`);
+    client.on("data", async (data) => {
+      req.body.updatedAt = new Date();
+      const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+      req.body.pwd = newPwd[0];
+      const updatedUser: User = req.body as User;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await collections.users!.updateOne(query, {
+        $set: updatedUser,
+      });
+
+      client.write("exit\n");
+
+      result
+        ? res.status(200).send(`Successfully updated user with id ${id}`)
+        : res.status(304).send(`User with id: ${id} not updated`);
+    });
   } catch (e) {
     if (e instanceof Error) {
       console.error(e.message);
