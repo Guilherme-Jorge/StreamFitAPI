@@ -25,7 +25,7 @@ export async function connectToDatabase() {
     validator: {
       $jsonSchema: {
         bsonType: "object",
-        required: ["accountType", "name", "email", "pwd", "plan"],
+        required: ["accountType", "name", "email", "pwd"],
         additionalProperties: false,
         properties: {
           _id: {},
@@ -49,19 +49,19 @@ export async function connectToDatabase() {
           },
           plan: {
             bsonType: "string",
-            description: "'plan' is required and is a string",
+            description: "'plan' is optional and is a string",
           },
           // profilePic: {
-          //   bsonType: "",
-          //   description: "'profilePic' is optional and is a ",
+          //   bsonType: "binary",
+          //   description: "'profilePic' is optional and is binary",
           // },
           degree: {
             bsonType: "string",
             description: "'degree' is optional and is a string",
           },
           // degreePic: {
-          //   bsonType: "",
-          //   description: "'degreePic' is optional and is a ",
+          //   bsonType: "binary",
+          //   description: "'degreePic' is optional and is binary",
           // },
           description: {
             bsonType: "string",
@@ -71,22 +71,22 @@ export async function connectToDatabase() {
             bsonType: "string",
             description: "'personalId' is optional and is a string",
           },
-          // personalSubs: {
-          //   bsonType: "array",
-          //   description: "'personalSubs' is optional and is an array",
-          // },
-          // personalFlw: {
-          //   bsonType: "array",
-          //   description: "'personalFlw' is optional and is an array",
-          // },
-          // subscribers: {
-          //   bsonType: "array",
-          //   description: "'subscribers' is optional and is an array",
-          // },
-          // followers: {
-          //   bsonType: "array",
-          //   description: "'followers' is optional and is an array",
-          // },
+          personalSubs: {
+            bsonType: "array",
+            description: "'personalSubs' is optional and is an array",
+          },
+          personalFlw: {
+            bsonType: "array",
+            description: "'personalFlw' is optional and is an array",
+          },
+          subscribers: {
+            bsonType: "array",
+            description: "'subscribers' is optional and is an array",
+          },
+          followers: {
+            bsonType: "array",
+            description: "'followers' is optional and is an array",
+          },
           createdAt: {
             bsonType: "date",
             description: "'createdAt' is optional and is a date",
