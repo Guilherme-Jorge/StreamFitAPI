@@ -74,49 +74,6 @@ usersRouter.get("/user/:id", async (req: Request, res: Response) => {
   }
 });
 
-usersRouter.get("/login/", async (req: Request, res: Response) => {
-  const cResponse: CustomResponse = {
-    status: "ERROR",
-    message: "Unable to execute function",
-    payload: undefined,
-  };
-
-  try {
-    const client = createConnection(port, host, () => {
-      client.write(`ENCRYPT:${req.body.pwd}\n`);
-    });
-
-    client.on("data", async (data) => {
-      const pwd = data.toString().split(/(?:\r\n|\r|\n)/g);
-
-      const user = (await collections.users!.findOne({
-        email: req.body.email,
-        pwd: pwd[0],
-      })) as unknown as User;
-
-      if (user) {
-        cResponse.status = "SUCCESS";
-        cResponse.message = `Login was validated for user with email: ${req.body.email}`;
-        cResponse.payload = user._id;
-
-        res.status(200).send(cResponse);
-      } else {
-        cResponse.status = "ERROR";
-        cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
-        cResponse.payload = undefined;
-
-        res.status(404).send(cResponse);
-      }
-    });
-  } catch (e) {
-    cResponse.status = "ERROR";
-    cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
-    cResponse.payload = e;
-
-    res.status(404).send(cResponse);
-  }
-});
-
 usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -129,7 +86,7 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
   try {
     const query = { _id: new ObjectId(id) };
     const user = (await collections.users!.findOne(query)) as unknown as User;
-
+    
     const client = createConnection(port, host, () => {
       client.write(`DECRYPT:${user.pwd}\n`);
     });
@@ -137,7 +94,7 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
     client.on("data", async (data) => {
       const pwdDecrypted = data.toString().split(/(?:\r\n|\r|\n)/g);
       user.pwd = pwdDecrypted[0];
-
+      
       client.write("exit\n");
 
       if (user) {
@@ -173,27 +130,27 @@ usersRouter.post("/", async (req: Request, res: Response) => {
     client.on("data", async (data) => {
       const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
       req.body.pwd = newPwd[0];
-
+      
       req.body.createdAt = new Date();
       req.body.updatedAt = new Date();
-
+      
       const newUser = req.body as User;
       const result = await collections.users!.insertOne(newUser);
-
+      
       client.write("exit\n");
-
+      
       // cResponse.status = "SUCCESS";
       // cResponse.message = `Successfully created a new user with id ${result.insertedId}`;
       // cResponse.payload = updatedUser;
-
+      
       // cResponse.status = "ERROR";
       // cResponse.message = "Failed to create a new user";
       // cResponse.payload = undefined;
-
+      
       result
-        ? res
-            .status(201)
-            .send(
+      ? res
+      .status(201)
+      .send(
               `Successfully created a new user with id ${result.insertedId}`
             )
         : res.status(500).send("Failed to create a new user");
@@ -202,9 +159,52 @@ usersRouter.post("/", async (req: Request, res: Response) => {
     cResponse.status = "ERROR";
     cResponse.message = "Error when creating user";
     cResponse.payload = e;
-
+    
     if (e instanceof Error) cResponse.payload = e.message;
     res.status(400).send(cResponse);
+  }
+});
+
+usersRouter.post("/login/", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  try {
+    const client = createConnection(port, host, () => {
+      client.write(`ENCRYPT:${req.body.pwd}\n`);
+    });
+
+    client.on("data", async (data) => {
+      const pwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+
+      const user = (await collections.users!.findOne({
+        email: req.body.email,
+        pwd: pwd[0],
+      })) as unknown as User;
+
+      if (user) {
+        cResponse.status = "SUCCESS";
+        cResponse.message = `Login was validated for user with email: ${req.body.email}`;
+        cResponse.payload = user;
+
+        res.status(200).send(cResponse);
+      } else {
+        cResponse.status = "ERROR";
+        cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
+        cResponse.payload = undefined;
+
+        res.status(404).send(cResponse);
+      }
+    });
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
+    cResponse.payload = e;
+
+    res.status(404).send(cResponse);
   }
 });
 
