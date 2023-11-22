@@ -21,18 +21,37 @@ const port: number = 12345;
 
 // GET
 usersRouter.get("/", async (_req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   try {
     const users = (await collections
       .users!.find({})
       .toArray()) as unknown as User[];
 
-    res.status(200).send(users);
+    cResponse.status = "SUCCESS";
+    cResponse.message = "Users fetched from MongoDB";
+    cResponse.payload = users;
+
+    res.status(200).send(cResponse);
   } catch (e) {
-    if (e instanceof Error) res.status(500).send(e.message);
+    cResponse.status = "ERROR";
+    cResponse.message = "Error when fetching from MongoDB";
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(500).send(cResponse);
   }
 });
 
 usersRouter.get("/user/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   const id = req?.params?.id;
 
   try {
@@ -40,16 +59,28 @@ usersRouter.get("/user/:id", async (req: Request, res: Response) => {
     const user = (await collections.users!.findOne(query)) as unknown as User;
 
     if (user) {
-      res.status(200).send(user);
+      cResponse.status = "SUCCESS";
+      cResponse.message = `Document found for user ${req.params.id}`;
+      cResponse.payload = user;
+
+      res.status(200).send(cResponse);
     }
   } catch (e) {
-    res
-      .status(404)
-      .send(`Unable to find matching document with id: ${req.params.id}`);
+    cResponse.status = "ERROR";
+    cResponse.message = `Unable to find matching document with id: ${req.params.id}`;
+    cResponse.payload = e;
+
+    res.status(404).send(cResponse);
   }
 });
 
 usersRouter.get("/login/", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   try {
     const client = createConnection(port, host, () => {
       client.write(`ENCRYPT:${req.body.pwd}\n`);
@@ -64,17 +95,35 @@ usersRouter.get("/login/", async (req: Request, res: Response) => {
       })) as unknown as User;
 
       if (user) {
-        res.status(200).send({ id: user._id });
+        cResponse.status = "SUCCESS";
+        cResponse.message = `Login was validated for user with email: ${req.body.email}`;
+        cResponse.payload = user._id;
+
+        res.status(200).send(cResponse);
+      } else {
+        cResponse.status = "ERROR";
+        cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
+        cResponse.payload = undefined;
+
+        res.status(404).send(cResponse);
       }
     });
   } catch (e) {
-    res
-      .status(404)
-      .send(`Unable to find matching user with email: ${req.params.email}`);
+    cResponse.status = "ERROR";
+    cResponse.message = `Unable to find matching user with email: ${req.body.email}`;
+    cResponse.payload = e;
+
+    res.status(404).send(cResponse);
   }
 });
 
 usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   const id = req?.params?.id;
 
   try {
@@ -92,18 +141,30 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
       client.write("exit\n");
 
       if (user) {
-        res.status(200).send(user);
+        cResponse.status = "SUCCESS";
+        cResponse.message = `Document with decrypted password found for user ${req.params.id}`;
+        cResponse.payload = user;
+
+        res.status(200).send(cResponse);
       }
     });
   } catch (e) {
-    res
-      .status(404)
-      .send(`Unable to find matching document with id: ${req.params.id}`);
+    cResponse.status = "ERROR";
+    cResponse.message = `Unable to find matching document with id: ${req.params.id}`;
+    cResponse.payload = e;
+
+    res.status(404).send(cResponse);
   }
 });
 
 // POST
 usersRouter.post("/", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   try {
     const client = createConnection(port, host, () => {
       client.write(`ENCRYPT:${req.body.pwd}\n`);
@@ -121,22 +182,40 @@ usersRouter.post("/", async (req: Request, res: Response) => {
 
       client.write("exit\n");
 
+      // cResponse.status = "SUCCESS";
+      // cResponse.message = `Successfully created a new user with id ${result.insertedId}`;
+      // cResponse.payload = updatedUser;
+
+      // cResponse.status = "ERROR";
+      // cResponse.message = "Failed to create a new user";
+      // cResponse.payload = undefined;
+
       result
         ? res
             .status(201)
             .send(
               `Successfully created a new user with id ${result.insertedId}`
             )
-        : res.status(500).send("Failed to create a new user.");
+        : res.status(500).send("Failed to create a new user");
     });
   } catch (e) {
-    console.error(e);
-    if (e instanceof Error) res.status(400).send(e.message);
+    cResponse.status = "ERROR";
+    cResponse.message = "Error when creating user";
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(400).send(cResponse);
   }
 });
 
 // PUT
 usersRouter.put("/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   const id = req?.params?.id;
 
   try {
@@ -157,20 +236,36 @@ usersRouter.put("/:id", async (req: Request, res: Response) => {
 
       client.write("exit\n");
 
+      // cResponse.status = "SUCCESS";
+      // cResponse.message = `Successfully updated user with id ${id}`;
+      // cResponse.payload = updatedUser;
+
+      // cResponse.status = "ERROR";
+      // cResponse.message = `User with id: ${id} not updated`;
+      // cResponse.payload = undefined;
+
       result
         ? res.status(200).send(`Successfully updated user with id ${id}`)
         : res.status(304).send(`User with id: ${id} not updated`);
     });
   } catch (e) {
-    if (e instanceof Error) {
-      console.error(e.message);
-      res.status(400).send(e.message);
-    }
+    cResponse.status = "ERROR";
+    cResponse.message = `Error when updating user with id ${id}`;
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(400).send(cResponse);
   }
 });
 
 // DELETE
 usersRouter.delete("/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
   const id = req?.params?.id;
 
   try {
@@ -178,16 +273,30 @@ usersRouter.delete("/:id", async (req: Request, res: Response) => {
     const result = await collections.users!.deleteOne(query);
 
     if (result && result.deletedCount) {
-      res.status(202).send(`Successfully removed user with id ${id}`);
+      cResponse.status = "SUCCESS";
+      cResponse.message = `Successfully removed user with id ${id}`;
+      cResponse.payload = result.deletedCount;
+
+      res.status(202).send(cResponse);
     } else if (!result) {
-      res.status(400).send(`Failed to remove user with id ${id}`);
+      cResponse.status = "ERROR";
+      cResponse.message = `Failed to remove user with id ${id}`;
+      cResponse.payload = undefined;
+
+      res.status(400).send(cResponse);
     } else if (!result.deletedCount) {
-      res.status(404).send(`User with id ${id} does not exist`);
+      cResponse.status = "ERROR";
+      cResponse.message = `User with id ${id} does not exist`;
+      cResponse.payload = undefined;
+
+      res.status(404).send(cResponse);
     }
   } catch (e) {
-    if (e instanceof Error) {
-      console.error(e.message);
-      res.status(400).send(e.message);
-    }
+    cResponse.status = "ERROR";
+    cResponse.message = `Error when deleting user with id ${id}`;
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(400).send(cResponse);
   }
 });
