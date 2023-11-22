@@ -32,7 +32,7 @@ messagesRouter.get("/", async (_req: Request, res: Response) => {
     cResponse.message = "Messages fetched from MongoDB";
     cResponse.payload = messages;
 
-    res.status(200).send(messages);
+    res.status(200).send(cResponse);
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = "Error when fetching from MongoDB";
@@ -40,6 +40,47 @@ messagesRouter.get("/", async (_req: Request, res: Response) => {
 
     if (e instanceof Error) cResponse.payload = e.message;
     res.status(500).send(cResponse);
+  }
+});
+// Function to get sendId and recieveId for messages tab
+messagesRouter.get("/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  try {
+    const query = {
+      $or: [{ sendId: req.params.id }, { recieveId: req.params.id }],
+    };
+    const messages = (await collections
+      .messages!.find(query)
+      .sort({ sentAt: -1 })
+      .toArray()) as unknown as Message[];
+
+    const users: String[] = [];
+    messages.forEach((message) => {
+      if (!users.includes(message.sendId) && message.sendId != req.params.id) {
+        users.push(message.sendId);
+      } else if (
+        !users.includes(message.recieveId) &&
+        message.recieveId != req.params.id
+      ) {
+        users.push(message.recieveId);
+      }
+    });
+
+    cResponse.status = "SUCCESS";
+    cResponse.message = `Users with messages with user ${req.params.id} where found`;
+    cResponse.payload = users;
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = `Messages for user ${req.params.id} not found`;
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(404).send(cResponse);
   }
 });
 
@@ -59,7 +100,7 @@ messagesRouter.post("/", async (req: Request, res: Response) => {
 
     // cResponse.status = "SUCCESS";
     // cResponse.message = `Successfully created a new message with id ${result.insertedId}`;
-    // cResponse.payload = updatedUser;
+    // cResponse.payload = newMessage;
 
     // cResponse.status = "ERROR";
     // cResponse.message = "Failed to create a new message";
