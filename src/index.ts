@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application } from "express";
 import { connectToDatabase } from "./services/database.service";
 import { usersRouter } from "./routes/users.routes";
 import { messagesRouter } from "./routes/messages.routes";
