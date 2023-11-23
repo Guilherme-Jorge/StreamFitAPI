@@ -1,5 +1,5 @@
 // External dependencies
-import { ObjectId } from "mongodb";
+import { Binary, ObjectId } from "mongodb";
 
 // Class Implementation
 export default class User {
@@ -9,9 +9,9 @@ export default class User {
     public email: String,
     public pwd: String,
     public plan?: String,
-    // public profilePic?: ,
+    // public profilePic?: Binary,
     public degree?: String,
-    // public degreePic?: ,
+    // public degreePic?: Binary,
     public description?: String,
     public personalId?: String,
     public personalSubs?: String[],
