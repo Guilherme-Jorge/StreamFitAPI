@@ -45,6 +45,46 @@ usersRouter.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+usersRouter.get("/personais/", async (_req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  try {
+    const users = (await collections
+      .users!.find({})
+      .filter({ accountType: "personal" })
+      .sort({ createdAt: -1 })
+      .toArray()) as unknown as User[];
+
+    const personais: any[] = [];
+    users.forEach((user) => {
+      const personal = {
+        _id: user._id,
+        name: user.name,
+        degree: user.degree,
+        description: user.description,
+        subscribers: user.subscribers?.length,
+        followers: user.followers?.length,
+      };
+      personais.push(personal);
+    });
+
+    cResponse.status = "SUCCESS";
+    cResponse.message = "Personais fetched from MongoDB";
+    cResponse.payload = personais;
+
+    res.status(200).send(cResponse);
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = "Error when fetching from MongoDB";
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(500).send(cResponse);
+  }
+});
+
 usersRouter.get("/user/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -64,6 +104,12 @@ usersRouter.get("/user/:id", async (req: Request, res: Response) => {
       cResponse.payload = user;
 
       res.status(200).send(cResponse);
+    } else {
+      cResponse.status = "ERROR";
+      cResponse.message = `Unable to find matching document with id: ${req.params.id}`;
+      cResponse.payload = undefined;
+
+      res.status(404).send(cResponse);
     }
   } catch (e) {
     cResponse.status = "ERROR";
@@ -86,7 +132,7 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
   try {
     const query = { _id: new ObjectId(id) };
     const user = (await collections.users!.findOne(query)) as unknown as User;
-    
+
     const client = createConnection(port, host, () => {
       client.write(`DECRYPT:${user.pwd}\n`);
     });
@@ -94,7 +140,7 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
     client.on("data", async (data) => {
       const pwdDecrypted = data.toString().split(/(?:\r\n|\r|\n)/g);
       user.pwd = pwdDecrypted[0];
-      
+
       client.write("exit\n");
 
       if (user) {
@@ -123,43 +169,65 @@ usersRouter.post("/", async (req: Request, res: Response) => {
   };
 
   try {
-    const client = createConnection(port, host, () => {
-      client.write(`ENCRYPT:${req.body.pwd}\n`);
-    });
+    const users = (await collections
+      .users!.find({})
+      .toArray()) as unknown as User[];
 
-    client.on("data", async (data) => {
-      const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
-      req.body.pwd = newPwd[0];
-      
-      req.body.createdAt = new Date();
-      req.body.updatedAt = new Date();
-      
-      const newUser = req.body as User;
-      const result = await collections.users!.insertOne(newUser);
-      
-      client.write("exit\n");
-      
-      // cResponse.status = "SUCCESS";
-      // cResponse.message = `Successfully created a new user with id ${result.insertedId}`;
-      // cResponse.payload = updatedUser;
-      
-      // cResponse.status = "ERROR";
-      // cResponse.message = "Failed to create a new user";
-      // cResponse.payload = undefined;
-      
-      result
-      ? res
-      .status(201)
-      .send(
-              `Successfully created a new user with id ${result.insertedId}`
-            )
-        : res.status(500).send("Failed to create a new user");
-    });
+    if (!users.some((user) => user.email == req.body.email)) {
+      const client = createConnection(port, host, () => {
+        client.write(`ENCRYPT:${req.body.pwd}\n`);
+      });
+
+      client.on("data", async (data) => {
+        const newUser = req.body as User;
+
+        const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+        newUser.pwd = newPwd[0];
+
+        newUser.createdAt = new Date();
+        newUser.updatedAt = new Date();
+
+        if (newUser.accountType == "aluno") {
+          newUser.plan = "free";
+          newUser.personalFlw = [];
+          newUser.personalSubs = [];
+        } else {
+          newUser.followers = [];
+          newUser.subscribers = [];
+        }
+
+        const result = await collections.users!.insertOne(newUser);
+
+        client.write("exit\n");
+
+        // cResponse.status = "SUCCESS";
+        // cResponse.message = `Successfully created a new user with id ${result.insertedId}`;
+        // cResponse.payload = updatedUser;
+
+        // cResponse.status = "ERROR";
+        // cResponse.message = "Failed to create a new user";
+        // cResponse.payload = undefined;
+
+        result
+          ? res
+              .status(201)
+              .send(
+                `Successfully created a new user with id ${result.insertedId}`
+              )
+          : res.status(500).send("Failed to create a new user");
+      });
+    } else {
+      cResponse.status = "ERROR";
+      cResponse.message = `User with email ${req.body.email} already exists`;
+      cResponse.payload = undefined;
+
+      res.status(400).send(cResponse);
+    }
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = "Error when creating user";
     cResponse.payload = e;
-    
+
     if (e instanceof Error) cResponse.payload = e.message;
     res.status(400).send(cResponse);
   }
