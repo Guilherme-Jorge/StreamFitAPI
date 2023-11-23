@@ -125,9 +125,9 @@ export async function connectToDatabase() {
             bsonType: "string",
             description: "'recieveId' is required and is a string",
           },
-          messageId: {
+          message: {
             bsonType: "string",
-            description: "'messageId' is required and is a string",
+            description: "'message' is required and is a string",
           },
           sentAt: {
             bsonType: "date",
