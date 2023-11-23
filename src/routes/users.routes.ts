@@ -200,21 +200,16 @@ usersRouter.post("/", async (req: Request, res: Response) => {
 
         client.write("exit\n");
 
-        // cResponse.status = "SUCCESS";
-        // cResponse.message = `Successfully created a new user with id ${result.insertedId}`;
-        // cResponse.payload = updatedUser;
-
-        // cResponse.status = "ERROR";
-        // cResponse.message = "Failed to create a new user";
-        // cResponse.payload = undefined;
-
         result
-          ? res
-              .status(201)
-              .send(
-                `Successfully created a new user with id ${result.insertedId}`
-              )
-          : res.status(500).send("Failed to create a new user");
+          ? res.status(201).send({
+              status: "SUCCESS",
+              message: `Successfully created a new user with id ${result.insertedId}`,
+              payload: result.insertedId,
+            })
+          : res.status(500).send({
+              status: "ERROR",
+              message: "Failed to create a new user",
+            });
       });
     } else {
       cResponse.status = "ERROR";
@@ -304,17 +299,16 @@ usersRouter.put("/:id", async (req: Request, res: Response) => {
 
       client.write("exit\n");
 
-      // cResponse.status = "SUCCESS";
-      // cResponse.message = `Successfully updated user with id ${id}`;
-      // cResponse.payload = updatedUser;
-
-      // cResponse.status = "ERROR";
-      // cResponse.message = `User with id: ${id} not updated`;
-      // cResponse.payload = undefined;
-
       result
-        ? res.status(200).send(`Successfully updated user with id ${id}`)
-        : res.status(304).send(`User with id: ${id} not updated`);
+        ? res.status(200).send({
+            status: "SUCCESS",
+            message: `Successfully updated user with id ${id}`,
+            payload: updatedUser,
+          })
+        : res.status(304).send({
+            status: "ERROR",
+            message: `User with id: ${id} not updated`,
+          });
     });
   } catch (e) {
     cResponse.status = "ERROR";
