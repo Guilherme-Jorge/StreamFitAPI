@@ -9,7 +9,7 @@ const port: number = 3000;
 connectToDatabase()
   .then(() => {
     /**
-     * 
+     * * post http://localhost:3000/users
      */
     app.use("/users", usersRouter);
 
