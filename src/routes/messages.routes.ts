@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import Message from "../models/message";
+import User from "../models/user";
 
 // Global Config
 export const messagesRouter = express.Router();
@@ -42,7 +43,8 @@ messagesRouter.get("/", async (_req: Request, res: Response) => {
     res.status(500).send(cResponse);
   }
 });
-// Function to get sendId and recieveId for messages tab
+
+// Function to get latest messages with users
 messagesRouter.get("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -59,21 +61,91 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
       .sort({ sentAt: -1 })
       .toArray()) as unknown as Message[];
 
-    const users: String[] = [];
-    messages.forEach((message) => {
-      if (!users.includes(message.sendId) && message.sendId != req.params.id) {
-        users.push(message.sendId);
-      } else if (
-        !users.includes(message.recieveId) &&
-        message.recieveId != req.params.id
-      ) {
-        users.push(message.recieveId);
-      }
-    });
+    if (messages.length != 0) {
+      const users: String[] = [];
+      messages.forEach((message) => {
+        if (
+          !users.includes(message.sendId) &&
+          message.sendId != req.params.id
+        ) {
+          users.push(message.sendId);
+        } else if (
+          !users.includes(message.recieveId) &&
+          message.recieveId != req.params.id
+        ) {
+          users.push(message.recieveId);
+        }
+      });
 
-    cResponse.status = "SUCCESS";
-    cResponse.message = `Users with messages with user ${req.params.id} where found`;
-    cResponse.payload = users;
+      const latestMessages: { user: any; message?: Message }[] = [];
+      users.forEach(async (user) => {
+        const newQuerySend = {
+          $and: [{ sendId: user as string }, { recieveId: req.params.id }],
+        };
+        const newQueryRecieve = {
+          $or: [{ sendId: req.params.id }, { recieveId: user as string }],
+        };
+
+        const fullUser = (await collections.users!.findOne({
+          _id: new ObjectId(user.toString()),
+        })) as unknown as User;
+
+        const messageSend = (await collections
+          .messages!.find(newQuerySend)
+          .sort({ sentAt: -1 })
+          .limit(1)
+          .next()) as unknown as Message;
+
+        const messageRecieve = (await collections
+          .messages!.find(newQueryRecieve)
+          .sort({ sentAt: -1 })
+          .limit(1)
+          .next()) as unknown as Message;
+
+        if (messageSend || messageRecieve) {
+          if (messageSend.sentAt > messageRecieve.sentAt)
+            latestMessages.push({ user: fullUser, message: messageSend });
+          else latestMessages.push({ user: fullUser, message: messageRecieve });
+        }
+      });
+
+      const currentUser = (await collections.users!.findOne({
+        _id: new ObjectId(req.params.id),
+      })) as unknown as User;
+
+      if (currentUser.accountType == "aluno") {
+        if (currentUser.personalFlw)
+          currentUser.personalFlw.forEach(async (personal) => {
+            const fullUser = (await collections.users!.findOne({
+              _id: new ObjectId(personal.toString()),
+            })) as unknown as User;
+
+            if (latestMessages.every((message) => message.user != personal))
+              latestMessages.push({ user: fullUser });
+          });
+        if (currentUser.personalSubs)
+          currentUser.personalSubs.forEach(async (personal) => {
+            const fullUser = (await collections.users!.findOne({
+              _id: new ObjectId(personal.toString()),
+            })) as unknown as User;
+
+            if (latestMessages.every((message) => message.user != personal))
+              latestMessages.push({ user: fullUser });
+          });
+      }
+
+      cResponse.status = "SUCCESS";
+      cResponse.message = `Latest messages for user ${req.params.id} where found`;
+      cResponse.payload = latestMessages;
+
+      res.status(200).send(cResponse);
+    } else {
+      cResponse.status = "ERROR";
+      cResponse.message = `Messages for user ${req.params.id} not found`;
+      cResponse.payload = undefined;
+
+      res.status(404).send(cResponse);
+    }
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = `Messages for user ${req.params.id} not found`;
