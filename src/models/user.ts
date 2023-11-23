@@ -4,7 +4,6 @@ import { ObjectId } from "mongodb";
 // Class Implementation
 export default class User {
   constructor(
-    public _id: ObjectId,
     public accountType: String,
     public name: String,
     public email: String,
@@ -20,6 +19,7 @@ export default class User {
     public subscribers?: String[],
     public followers?: String[],
     public createdAt?: Date,
-    public updatedAt?: Date
+    public updatedAt?: Date,
+    public _id?: ObjectId
   ) {}
 }
