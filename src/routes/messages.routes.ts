@@ -78,16 +78,17 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
       });
 
       const latestMessages: { user: any; message?: Message }[] = [];
-      users.forEach(async (user) => {
+
+      for (let i = 0; i < users.length; i++) {
         const newQuerySend = {
-          $and: [{ sendId: user as string }, { recieveId: req.params.id }],
+          $and: [{ sendId: users[i] as string }, { recieveId: req.params.id }],
         };
         const newQueryRecieve = {
-          $or: [{ sendId: req.params.id }, { recieveId: user as string }],
+          $and: [{ sendId: req.params.id }, { recieveId: users[i] as string }],
         };
 
         const fullUser = (await collections.users!.findOne({
-          _id: new ObjectId(user.toString()),
+          _id: new ObjectId(users[i].toString()),
         })) as unknown as User;
 
         const messageSend = (await collections
@@ -102,12 +103,21 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
           .limit(1)
           .next()) as unknown as Message;
 
-        if (messageSend || messageRecieve) {
+        if (messageSend != null && messageRecieve != null) {
           if (messageSend.sentAt > messageRecieve.sentAt)
             latestMessages.push({ user: fullUser, message: messageSend });
-          else latestMessages.push({ user: fullUser, message: messageRecieve });
-        }
-      });
+          else
+            latestMessages.push({
+              user: fullUser,
+              message: messageRecieve,
+            });
+        } else if (messageSend == null && messageRecieve != null)
+          latestMessages.push({ user: fullUser, message: messageRecieve });
+        else if (messageSend != null && messageRecieve == null)
+          latestMessages.push({ user: fullUser, message: messageSend });
+
+        console.log("\n\nLatest before" + latestMessages);
+      }
 
       const currentUser = (await collections.users!.findOne({
         _id: new ObjectId(req.params.id),
@@ -121,7 +131,7 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
             })) as unknown as User;
 
             if (latestMessages.every((message) => message.user != personal))
-              latestMessages.push({ user: fullUser });
+              latestMessages.push({ user: fullUser, message: undefined });
           });
         if (currentUser.personalSubs)
           currentUser.personalSubs.forEach(async (personal) => {
@@ -130,13 +140,55 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
             })) as unknown as User;
 
             if (latestMessages.every((message) => message.user != personal))
-              latestMessages.push({ user: fullUser });
+              latestMessages.push({ user: fullUser, message: undefined });
           });
       }
 
       cResponse.status = "SUCCESS";
       cResponse.message = `Latest messages for user ${req.params.id} where found`;
       cResponse.payload = latestMessages;
+
+      res.status(200).send(cResponse);
+    } else {
+      cResponse.status = "ERROR";
+      cResponse.message = `Messages for user ${req.params.id} not found`;
+      cResponse.payload = undefined;
+
+      res.status(404).send(cResponse);
+    }
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = `Messages for user ${req.params.id} not found`;
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(404).send(cResponse);
+  }
+});
+
+messagesRouter.get("/:id/:sendId", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  try {
+    const query = {
+      $or: [
+        { $and: [{ sendId: req.params.id }, { recieveId: req.params.sendId }] },
+        { $and: [{ sendId: req.params.sendId }, { recieveId: req.params.id }] },
+      ],
+    };
+    const messages = (await collections
+      .messages!.find(query)
+      .sort({ sentAt: 1 })
+      .toArray()) as unknown as Message[];
+
+    if (messages.length != 0) {
+      cResponse.status = "SUCCESS";
+      cResponse.message = `Latest messages for user ${req.params.id} where found`;
+      cResponse.payload = messages;
 
       res.status(200).send(cResponse);
     } else {
@@ -170,21 +222,16 @@ messagesRouter.post("/", async (req: Request, res: Response) => {
     const newMessage = req.body as Message;
     const result = await collections.messages!.insertOne(newMessage);
 
-    // cResponse.status = "SUCCESS";
-    // cResponse.message = `Successfully created a new message with id ${result.insertedId}`;
-    // cResponse.payload = newMessage;
-
-    // cResponse.status = "ERROR";
-    // cResponse.message = "Failed to create a new message";
-    // cResponse.payload = undefined;
-
     result
-      ? res
-          .status(201)
-          .send(
-            `Successfully created a new message with id ${result.insertedId}`
-          )
-      : res.status(500).send("Failed to create a new message");
+      ? res.status(201).send({
+          status: "SUCCESS",
+          message: `Successfully created a new message with id ${result.insertedId}`,
+          payload: newMessage,
+        })
+      : res.status(500).send({
+          status: "ERROR",
+          message: "Failed to create a new message",
+        });
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = "Error when creating message";
