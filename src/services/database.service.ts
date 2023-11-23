@@ -5,7 +5,8 @@ import * as dotenv from "dotenv";
 // Global Variables
 export const collections: {
    users?: mongoDB.Collection,
-   messages?: mongoDB.Collection
+   messages?: mongoDB.Collection,
+   lives?: mongoDB.Collection
   } = {};
 
 // Initialize Connection
@@ -143,7 +144,27 @@ export async function connectToDatabase() {
 
   collections.messages = messagesCollection;
 
+  await db.command({
+    collMod: process.env.LIVES_COLLECTION_NAME,
+    validator: {
+      $jsonSchema: {
+        bsonType: "object",
+        // required: [],
+        additionalProperties: false,
+        properties: {
+          _id: {},
+        },
+      },
+    },
+  });
+
+  const livesCollection: mongoDB.Collection = db.collection(
+    process.env.LIVES_COLLECTION_NAME!
+  );
+
+  collections.lives = livesCollection;
+
   console.log(
-    `Successfully connected to database: ${db.databaseName} and collections: ${usersCollection.collectionName}, ${messagesCollection.collectionName}`
+    `Successfully connected to database: ${db.databaseName} and collections: ${usersCollection.collectionName}, ${messagesCollection.collectionName}, ${livesCollection.collectionName}`
   );
 }
