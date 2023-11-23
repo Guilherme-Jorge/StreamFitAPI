@@ -8,8 +8,14 @@ const port: number = 3000;
 
 connectToDatabase()
   .then(() => {
+    /**
+     * 
+     */
     app.use("/users", usersRouter);
 
+    /**
+     * 
+     */
     app.use("/messages", messagesRouter)
 
     app.listen(port, () => {
