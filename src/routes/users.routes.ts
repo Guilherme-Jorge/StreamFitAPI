@@ -1,58 +1,85 @@
-// External Dependencies
+//* External Dependencies
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import User from "../models/user";
 import { createConnection } from "net";
 
-// Global Config
+//* Global Config
+
+// Creating router from index.js
 export const usersRouter = express.Router();
 
+// Setting up router to use express
 usersRouter.use(express.json());
 
+// Custom response type for methods returns
 type CustomResponse = {
   status: string | unknown;
   message: string | unknown;
   payload: unknown;
 };
 
+// Connection to Java Cipher server for password
 const host: string = "localhost";
 const port: number = 12345;
 
-// Functions
+//* Functions
 function arrayRemove(arr: any, value: any) {
   return arr.filter((elem: any) => {
     return elem != value;
   });
 }
 
-// GET
+/**
+ ** --------------
+ **      GET
+ ** --------------
+ *  */
+
+/**
+ * Method that gets all Users
+ * from the users collection on MongoDB
+ */
 usersRouter.get("/", async (_req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
     payload: undefined,
   };
 
+  // Try in case of failed access to MongoDB
   try {
+    // Fetching all users from collection on MongoDB
     const users = (await collections
       .users!.find({})
       .toArray()) as unknown as User[];
 
+    // Changing response to successful with all users
     cResponse.status = "SUCCESS";
     cResponse.message = "Users fetched from MongoDB";
     cResponse.payload = users;
 
+    // Sending response with success status
     res.status(200).send(cResponse);
   } catch (e) {
+    //! In case of error
+    // Changing response to error with error message
     cResponse.status = "ERROR";
     cResponse.message = "Error when fetching from MongoDB";
     if (e instanceof Error) cResponse.payload = e.message;
+
+    // Sending response with error status
     res.status(500).send(cResponse);
   }
 });
 
+/**
+ *
+ */
 usersRouter.get("/personais/", async (_req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -92,7 +119,11 @@ usersRouter.get("/personais/", async (_req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 usersRouter.get("/user/:id", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -127,7 +158,11 @@ usersRouter.get("/user/:id", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -167,8 +202,17 @@ usersRouter.get("/pwdDecrypted/:id", async (req: Request, res: Response) => {
   }
 });
 
-// POST
+/**
+ *? --------------
+ *?      POST
+ *? --------------
+ *  */
+
+/**
+ *
+ */
 usersRouter.post("/", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -235,7 +279,11 @@ usersRouter.post("/", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 usersRouter.post("/login/", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -278,8 +326,17 @@ usersRouter.post("/login/", async (req: Request, res: Response) => {
   }
 });
 
-// PUT
+/**
+ *TODO --------------
+ *TODO      PUT
+ *TODO --------------
+ *  */
+
+/**
+ *
+ */
 usersRouter.put("/user/:id", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -347,7 +404,11 @@ usersRouter.put("/user/:id", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 usersRouter.put("/follow/:personalId", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -400,9 +461,13 @@ usersRouter.put("/follow/:personalId", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 usersRouter.put(
   "/unfollow/:personalId",
   async (req: Request, res: Response) => {
+    // Creating default custom response in case of error
     const cResponse: CustomResponse = {
       status: "ERROR",
       message: "Unable to execute function",
@@ -456,9 +521,13 @@ usersRouter.put(
   }
 );
 
+/**
+ *
+ */
 usersRouter.put(
   "/subscribe/:personalId",
   async (req: Request, res: Response) => {
+    // Creating default custom response in case of error
     const cResponse: CustomResponse = {
       status: "ERROR",
       message: "Unable to execute function",
@@ -512,9 +581,13 @@ usersRouter.put(
   }
 );
 
+/**
+ *
+ */
 usersRouter.put(
   "/unsubscribe/:personalId",
   async (req: Request, res: Response) => {
+    // Creating default custom response in case of error
     const cResponse: CustomResponse = {
       status: "ERROR",
       message: "Unable to execute function",
@@ -568,8 +641,17 @@ usersRouter.put(
   }
 );
 
-// DELETE
+/**
+ *! --------------
+ *!     DELETE
+ *! --------------
+ *  */
+
+/**
+ *
+ */
 usersRouter.delete("/:id", async (req: Request, res: Response) => {
+  // Creating default custom response in case of error
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",

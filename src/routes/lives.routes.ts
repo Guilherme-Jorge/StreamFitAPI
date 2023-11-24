@@ -1,22 +1,34 @@
-// External Dependencies
+//* External Dependencies
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import Live from "../models/lives";
 import User from "../models/user";
 
-// Global Config
+//* Global Config
+
+// Creating router from index.js
 export const livesRouter = express.Router();
 
+// Setting up router to use express
 livesRouter.use(express.json());
 
+// Custom response type for methods returns
 type CustomResponse = {
   status: string | unknown;
   message: string | unknown;
   payload: unknown;
 };
 
-// GET
+/**
+ ** --------------
+ **      GET
+ ** --------------
+ *  */
+
+/**
+ *
+ */
 livesRouter.get("/", async (_req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -44,6 +56,9 @@ livesRouter.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 livesRouter.get("/currentAll", async (_req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -71,6 +86,9 @@ livesRouter.get("/currentAll", async (_req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ */
 livesRouter.get("/currentFlw/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -131,7 +149,15 @@ livesRouter.get("/currentFlw/:id", async (req: Request, res: Response) => {
   }
 });
 
-// POST
+/**
+ *? --------------
+ *?      POST
+ *? --------------
+ *  */
+
+/**
+ *
+ */
 livesRouter.post("/", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -149,7 +175,7 @@ livesRouter.post("/", async (req: Request, res: Response) => {
       ? res.status(201).send({
           status: "SUCCESS",
           message: `Successfully created a new live with id ${result.insertedId}`,
-          payload: newLive,
+          payload: result.insertedId,
         })
       : res.status(500).send({
           status: "ERROR",
@@ -165,7 +191,15 @@ livesRouter.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// PUT
+/**
+ *TODO --------------
+ *TODO      PUT
+ *TODO --------------
+ *  */
+
+/**
+ *
+ */
 livesRouter.put("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -203,7 +237,15 @@ livesRouter.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE
+/**
+ *! --------------
+ *!     DELETE
+ *! --------------
+ *  */
+
+/**
+ *
+ */
 livesRouter.delete("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",

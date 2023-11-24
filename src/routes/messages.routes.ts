@@ -1,22 +1,34 @@
-// External Dependencies
+//* External Dependencies
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import Message from "../models/message";
 import User from "../models/user";
 
-// Global Config
+//* Global Config
+
+// Creating router from index.js
 export const messagesRouter = express.Router();
 
+// Setting up router to use express
 messagesRouter.use(express.json());
 
+// Custom response type for methods returns
 type CustomResponse = {
   status: string | unknown;
   message: string | unknown;
   payload: unknown;
 };
 
-// GET
+/**
+ ** --------------
+ **      GET
+ ** --------------
+ *  */
+
+/**
+ *
+ */
 messagesRouter.get("/", async (_req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -44,7 +56,9 @@ messagesRouter.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// Function to get latest messages with users
+/**
+ *
+ */
 messagesRouter.get("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -166,6 +180,10 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+
+/**
+ *
+ */
 messagesRouter.get("/:id/:sendId", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -208,7 +226,15 @@ messagesRouter.get("/:id/:sendId", async (req: Request, res: Response) => {
   }
 });
 
-// POST
+/**
+ *? --------------
+ *?      POST
+ *? --------------
+ *  */
+
+/**
+ *
+ */
 messagesRouter.post("/", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -226,7 +252,7 @@ messagesRouter.post("/", async (req: Request, res: Response) => {
       ? res.status(201).send({
           status: "SUCCESS",
           message: `Successfully created a new message with id ${result.insertedId}`,
-          payload: newMessage,
+          payload: result.insertedId,
         })
       : res.status(500).send({
           status: "ERROR",
@@ -242,7 +268,15 @@ messagesRouter.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// PUT
+/**
+ *TODO --------------
+ *TODO      PUT
+ *TODO --------------
+ *  */
+
+/**
+ *
+ */
 messagesRouter.put("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
@@ -256,18 +290,20 @@ messagesRouter.put("/:id", async (req: Request, res: Response) => {
     const query = { _id: new ObjectId(id) };
     const updatedMessage: Message = req.body as Message;
 
-    const result = await collections.lives!.updateOne(query, { $set: updatedMessage });
+    const result = await collections.lives!.updateOne(query, {
+      $set: updatedMessage,
+    });
 
     result
-          ? res.status(200).send({
-              status: "SUCCESS",
-              message: `Successfully updated message with id ${id}`,
-              payload: updatedMessage,
-            })
-          : res.status(304).send({
-              status: "ERROR",
-              message: `Message with id ${id} not updated`,
-            });
+      ? res.status(200).send({
+          status: "SUCCESS",
+          message: `Successfully updated message with id ${id}`,
+          payload: updatedMessage,
+        })
+      : res.status(304).send({
+          status: "ERROR",
+          message: `Message with id ${id} not updated`,
+        });
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = `Error when updating message with id ${id}`;
@@ -278,7 +314,15 @@ messagesRouter.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE
+/**
+ *! --------------
+ *!     DELETE
+ *! --------------
+ *  */
+
+/**
+ *
+ */
 messagesRouter.delete("/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
