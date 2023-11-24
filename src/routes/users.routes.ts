@@ -19,6 +19,13 @@ type CustomResponse = {
 const host: string = "localhost";
 const port: number = 12345;
 
+// Functions
+function arrayRemove(arr: any, value: any) {
+  return arr.filter((elem: any) => {
+    return elem != value;
+  });
+}
+
 // GET
 usersRouter.get("/", async (_req: Request, res: Response) => {
   const cResponse: CustomResponse = {
@@ -272,7 +279,7 @@ usersRouter.post("/login/", async (req: Request, res: Response) => {
 });
 
 // PUT
-usersRouter.put("/:id", async (req: Request, res: Response) => {
+usersRouter.put("/user/:id", async (req: Request, res: Response) => {
   const cResponse: CustomResponse = {
     status: "ERROR",
     message: "Unable to execute function",
@@ -282,22 +289,42 @@ usersRouter.put("/:id", async (req: Request, res: Response) => {
   const id = req?.params?.id;
 
   try {
-    const client = createConnection(port, host, () => {
-      client.write(`ENCRYPT:${req.body.pwd}\n`);
-    });
+    const query = { _id: new ObjectId(id) };
 
-    client.on("data", async (data) => {
-      req.body.updatedAt = new Date();
-      const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
-      req.body.pwd = newPwd[0];
+    if (req.body.pwd) {
+      const client = createConnection(port, host, () => {
+        client.write(`ENCRYPT:${req.body.pwd}\n`);
+      });
+
+      client.on("data", async (data) => {
+        req.body.updatedAt = new Date();
+        const newPwd = data.toString().split(/(?:\r\n|\r|\n)/g);
+        req.body.pwd = newPwd[0];
+        const updatedUser: User = req.body as User;
+
+        const result = await collections.users!.updateOne(query, {
+          $set: updatedUser,
+        });
+
+        client.write("exit\n");
+
+        result
+          ? res.status(200).send({
+              status: "SUCCESS",
+              message: `Successfully updated user with id ${id}`,
+              payload: updatedUser,
+            })
+          : res.status(304).send({
+              status: "ERROR",
+              message: `User with id ${id} not updated`,
+            });
+      });
+    } else {
       const updatedUser: User = req.body as User;
-      const query = { _id: new ObjectId(id) };
 
       const result = await collections.users!.updateOne(query, {
         $set: updatedUser,
       });
-
-      client.write("exit\n");
 
       result
         ? res.status(200).send({
@@ -307,9 +334,9 @@ usersRouter.put("/:id", async (req: Request, res: Response) => {
           })
         : res.status(304).send({
             status: "ERROR",
-            message: `User with id: ${id} not updated`,
+            message: `User with id ${id} not updated`,
           });
-    });
+    }
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = `Error when updating user with id ${id}`;
@@ -319,6 +346,227 @@ usersRouter.put("/:id", async (req: Request, res: Response) => {
     res.status(400).send(cResponse);
   }
 });
+
+usersRouter.put("/follow/:personalId", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  const id = req?.body?.id;
+  const personalId = req?.params?.personalId;
+
+  try {
+    const queryAluno = { _id: new ObjectId(id) };
+    const queryPersonal = { _id: new ObjectId(personalId) };
+
+    const aluno = (await collections.users!.findOne(
+      queryAluno
+    )) as unknown as User;
+
+    const personal = (await collections.users!.findOne(
+      queryPersonal
+    )) as unknown as User;
+
+    aluno.personalFlw?.push(personalId);
+    personal.followers?.push(id);
+
+    await collections.lives!.updateOne(queryPersonal, {
+      $set: personal,
+    });
+
+    const result = await collections.lives!.updateOne(queryAluno, {
+      $set: aluno,
+    });
+
+    result
+      ? res.status(200).send({
+          status: "SUCCESS",
+          message: `Successfully updated user with id ${id}`,
+          payload: aluno,
+        })
+      : res.status(304).send({
+          status: "ERROR",
+          message: `Live with id ${id} not updated`,
+        });
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = `Error when updating user with id ${id}`;
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(400).send(cResponse);
+  }
+});
+
+usersRouter.put(
+  "/unfollow/:personalId",
+  async (req: Request, res: Response) => {
+    const cResponse: CustomResponse = {
+      status: "ERROR",
+      message: "Unable to execute function",
+      payload: undefined,
+    };
+
+    const id = req?.body?.id;
+    const personalId = req?.params?.personalId;
+
+    try {
+      const queryAluno = { _id: new ObjectId(id) };
+      const queryPersonal = { _id: new ObjectId(personalId) };
+
+      const aluno = (await collections.users!.findOne(
+        queryAluno
+      )) as unknown as User;
+
+      const personal = (await collections.users!.findOne(
+        queryPersonal
+      )) as unknown as User;
+
+      aluno.personalFlw = arrayRemove(aluno.personalFlw, personalId);
+      personal.followers = arrayRemove(aluno.followers, id);
+
+      await collections.lives!.updateOne(queryPersonal, {
+        $set: personal,
+      });
+
+      const result = await collections.lives!.updateOne(queryAluno, {
+        $set: aluno,
+      });
+
+      result
+        ? res.status(200).send({
+            status: "SUCCESS",
+            message: `Successfully updated user with id ${req.body.id}`,
+            payload: aluno,
+          })
+        : res.status(304).send({
+            status: "ERROR",
+            message: `Live with id ${req.body.id} not updated`,
+          });
+    } catch (e) {
+      cResponse.status = "ERROR";
+      cResponse.message = `Error when updating user with id ${id}`;
+      cResponse.payload = e;
+
+      if (e instanceof Error) cResponse.payload = e.message;
+      res.status(400).send(cResponse);
+    }
+  }
+);
+
+usersRouter.put(
+  "/subscribe/:personalId",
+  async (req: Request, res: Response) => {
+    const cResponse: CustomResponse = {
+      status: "ERROR",
+      message: "Unable to execute function",
+      payload: undefined,
+    };
+
+    const id = req?.body?.id;
+    const personalId = req?.params?.personalId;
+
+    try {
+      const queryAluno = { _id: new ObjectId(id) };
+      const queryPersonal = { _id: new ObjectId(personalId) };
+
+      const aluno = (await collections.users!.findOne(
+        queryAluno
+      )) as unknown as User;
+
+      const personal = (await collections.users!.findOne(
+        queryPersonal
+      )) as unknown as User;
+
+      aluno.personalSubs?.push(personalId);
+      personal.subscribers?.push(id);
+
+      await collections.lives!.updateOne(queryPersonal, {
+        $set: personal,
+      });
+
+      const result = await collections.lives!.updateOne(queryAluno, {
+        $set: aluno,
+      });
+
+      result
+        ? res.status(200).send({
+            status: "SUCCESS",
+            message: `Successfully updated user with id ${id}`,
+            payload: aluno,
+          })
+        : res.status(304).send({
+            status: "ERROR",
+            message: `Live with id ${id} not updated`,
+          });
+    } catch (e) {
+      cResponse.status = "ERROR";
+      cResponse.message = `Error when updating user with id ${id}`;
+      cResponse.payload = e;
+
+      if (e instanceof Error) cResponse.payload = e.message;
+      res.status(400).send(cResponse);
+    }
+  }
+);
+
+usersRouter.put(
+  "/unsubscribe/:personalId",
+  async (req: Request, res: Response) => {
+    const cResponse: CustomResponse = {
+      status: "ERROR",
+      message: "Unable to execute function",
+      payload: undefined,
+    };
+
+    const id = req?.body?.id;
+    const personalId = req?.params?.personalId;
+
+    try {
+      const queryAluno = { _id: new ObjectId(id) };
+      const queryPersonal = { _id: new ObjectId(personalId) };
+
+      const aluno = (await collections.users!.findOne(
+        queryAluno
+      )) as unknown as User;
+
+      const personal = (await collections.users!.findOne(
+        queryPersonal
+      )) as unknown as User;
+
+      aluno.personalSubs = arrayRemove(aluno.personalSubs, personalId);
+      personal.subscribers = arrayRemove(aluno.subscribers, id);
+
+      await collections.lives!.updateOne(queryPersonal, {
+        $set: personal,
+      });
+
+      const result = await collections.lives!.updateOne(queryAluno, {
+        $set: aluno,
+      });
+
+      result
+        ? res.status(200).send({
+            status: "SUCCESS",
+            message: `Successfully updated user with id ${req.body.id}`,
+            payload: aluno,
+          })
+        : res.status(304).send({
+            status: "ERROR",
+            message: `Live with id ${req.body.id} not updated`,
+          });
+    } catch (e) {
+      cResponse.status = "ERROR";
+      cResponse.message = `Error when updating user with id ${req.body.id}`;
+      cResponse.payload = e;
+
+      if (e instanceof Error) cResponse.payload = e.message;
+      res.status(400).send(cResponse);
+    }
+  }
+);
 
 // DELETE
 usersRouter.delete("/:id", async (req: Request, res: Response) => {
