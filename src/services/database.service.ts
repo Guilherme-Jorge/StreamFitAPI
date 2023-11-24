@@ -4,10 +4,10 @@ import * as dotenv from "dotenv";
 
 // Global Variables
 export const collections: {
-   users?: mongoDB.Collection,
-   messages?: mongoDB.Collection,
-   lives?: mongoDB.Collection
-  } = {};
+  users?: mongoDB.Collection;
+  messages?: mongoDB.Collection;
+  lives?: mongoDB.Collection;
+} = {};
 
 // Initialize Connection
 export async function connectToDatabase() {
@@ -118,8 +118,7 @@ export async function connectToDatabase() {
           _id: {},
           sendId: {
             bsonType: "string",
-            description:
-              "'sendId' is required and is a string",
+            description: "'sendId' is required and is a string",
           },
           recieveId: {
             bsonType: "string",
@@ -149,10 +148,38 @@ export async function connectToDatabase() {
     validator: {
       $jsonSchema: {
         bsonType: "object",
-        // required: [],
+        required: ["title", "active", "personal", "url"],
         additionalProperties: false,
         properties: {
           _id: {},
+          title: {
+            bsonType: "string",
+            description: "'title' is required and is a string",
+          },
+          description: {
+            bsonType: "string",
+            description: "'description' is optional and is a string",
+          },
+          tags: {
+            bsonType: "array",
+            description: "'tags' is optional and is an array",
+          },
+          active: {
+            bsonType: "boolean",
+            description: "'active' is required and is a boolean",
+          },
+          personal: {
+            bsonType: "string",
+            description: "'personal' is required and is a string",
+          },
+          url: {
+            bsonType: "string",
+            description: "'url' is required and is a string",
+          },
+          createdAt: {
+            bsonType: "date",
+            description: "'createdAt' is optional and is a date",
+          },
         },
       },
     },
