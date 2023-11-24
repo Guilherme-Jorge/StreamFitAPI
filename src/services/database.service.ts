@@ -53,7 +53,7 @@ export async function connectToDatabase() {
             description: "'plan' is optional and is a string",
           },
           // profilePic: {
-          //   bsonType: "binary",
+          //   bsonType: "binData",
           //   description: "'profilePic' is optional and is binary",
           // },
           degree: {
@@ -61,7 +61,7 @@ export async function connectToDatabase() {
             description: "'degree' is optional and is a string",
           },
           // degreePic: {
-          //   bsonType: "binary",
+          //   bsonType: "binData",
           //   description: "'degreePic' is optional and is binary",
           // },
           description: {
@@ -165,7 +165,7 @@ export async function connectToDatabase() {
             description: "'tags' is optional and is an array",
           },
           active: {
-            bsonType: "boolean",
+            bsonType: "bool",
             description: "'active' is required and is a boolean",
           },
           personal: {
