@@ -187,20 +187,20 @@ messagesRouter.get("/:id/:sendId", async (req: Request, res: Response) => {
 
     if (messages.length != 0) {
       cResponse.status = "SUCCESS";
-      cResponse.message = `Latest messages for user ${req.params.id} where found`;
+      cResponse.message = `Latest messages between user ${req.params.id} and user ${req.params.sendId} where found`;
       cResponse.payload = messages;
 
       res.status(200).send(cResponse);
     } else {
       cResponse.status = "ERROR";
-      cResponse.message = `Messages for user ${req.params.id} not found`;
+      cResponse.message = `Messages between user ${req.params.id} and user ${req.params.sendId} not found`;
       cResponse.payload = undefined;
 
       res.status(404).send(cResponse);
     }
   } catch (e) {
     cResponse.status = "ERROR";
-    cResponse.message = `Messages for user ${req.params.id} not found`;
+    cResponse.message = `Messages between user ${req.params.id} and user ${req.params.sendId} not found`;
     cResponse.payload = e;
 
     if (e instanceof Error) cResponse.payload = e.message;
@@ -235,6 +235,42 @@ messagesRouter.post("/", async (req: Request, res: Response) => {
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = "Error when creating message";
+    cResponse.payload = e;
+
+    if (e instanceof Error) cResponse.payload = e.message;
+    res.status(400).send(cResponse);
+  }
+});
+
+// PUT
+messagesRouter.put("/:id", async (req: Request, res: Response) => {
+  const cResponse: CustomResponse = {
+    status: "ERROR",
+    message: "Unable to execute function",
+    payload: undefined,
+  };
+
+  const id = req?.params?.id;
+
+  try {
+    const query = { _id: new ObjectId(id) };
+    const updatedMessage: Message = req.body as Message;
+
+    const result = await collections.lives!.updateOne(query, { $set: updatedMessage });
+
+    result
+          ? res.status(200).send({
+              status: "SUCCESS",
+              message: `Successfully updated message with id ${id}`,
+              payload: updatedMessage,
+            })
+          : res.status(304).send({
+              status: "ERROR",
+              message: `Message with id ${id} not updated`,
+            });
+  } catch (e) {
+    cResponse.status = "ERROR";
+    cResponse.message = `Error when updating message with id ${id}`;
     cResponse.payload = e;
 
     if (e instanceof Error) cResponse.payload = e.message;
