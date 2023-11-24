@@ -2,7 +2,7 @@
 import { ObjectId } from "mongodb";
 
 // Class Implementation
-export default class Lives {
+export default class Live {
   constructor(
     public title: String,
     public description: String,
