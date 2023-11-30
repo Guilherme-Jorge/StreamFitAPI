@@ -129,8 +129,6 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
           latestMessages.push({ user: fullUser, message: messageRecieve });
         else if (messageSend != null && messageRecieve == null)
           latestMessages.push({ user: fullUser, message: messageSend });
-
-        console.log("\n\nLatest before" + latestMessages);
       }
 
       const currentUser = (await collections.users!.findOne({

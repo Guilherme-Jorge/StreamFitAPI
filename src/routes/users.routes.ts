@@ -433,12 +433,12 @@ usersRouter.put("/follow/:personalId", async (req: Request, res: Response) => {
     aluno.personalFlw?.push(personalId);
     personal.followers?.push(id);
 
-    await collections.lives!.updateOne(queryPersonal, {
-      $set: personal,
+    await collections.users!.updateOne(queryPersonal, {
+      $set: { followers: personal.followers },
     });
 
-    const result = await collections.lives!.updateOne(queryAluno, {
-      $set: aluno,
+    const result = await collections.users!.updateOne(queryAluno, {
+      $set: { personalFlw: aluno.personalFlw },
     });
 
     result
@@ -492,12 +492,12 @@ usersRouter.put(
       aluno.personalFlw = arrayRemove(aluno.personalFlw, personalId);
       personal.followers = arrayRemove(aluno.followers, id);
 
-      await collections.lives!.updateOne(queryPersonal, {
-        $set: personal,
+      await collections.users!.updateOne(queryPersonal, {
+        $set: { followers: personal.followers },
       });
 
-      const result = await collections.lives!.updateOne(queryAluno, {
-        $set: aluno,
+      const result = await collections.users!.updateOne(queryAluno, {
+        $set: { personalFlw: aluno.personalFlw },
       });
 
       result
@@ -552,12 +552,12 @@ usersRouter.put(
       aluno.personalSubs?.push(personalId);
       personal.subscribers?.push(id);
 
-      await collections.lives!.updateOne(queryPersonal, {
-        $set: personal,
+      await collections.users!.updateOne(queryPersonal, {
+        $set: { subscribers: personal.subscribers },
       });
 
-      const result = await collections.lives!.updateOne(queryAluno, {
-        $set: aluno,
+      const result = await collections.users!.updateOne(queryAluno, {
+        $set: { personalSubs: aluno.personalSubs },
       });
 
       result
@@ -612,12 +612,12 @@ usersRouter.put(
       aluno.personalSubs = arrayRemove(aluno.personalSubs, personalId);
       personal.subscribers = arrayRemove(aluno.subscribers, id);
 
-      await collections.lives!.updateOne(queryPersonal, {
-        $set: personal,
+      await collections.users!.updateOne(queryPersonal, {
+        $set: { subscribers: personal.subscribers },
       });
 
-      const result = await collections.lives!.updateOne(queryAluno, {
-        $set: aluno,
+      const result = await collections.users!.updateOne(queryAluno, {
+        $set: { personalSubs: aluno.personalSubs },
       });
 
       result
