@@ -136,24 +136,16 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
       })) as unknown as User;
 
       if (currentUser.accountType == "aluno") {
-        if (currentUser.personalFlw)
-          currentUser.personalFlw.forEach(async (personal) => {
-            const fullUser = (await collections.users!.findOne({
-              _id: new ObjectId(personal.toString()),
+        const personais = currentUser.personalSubs!;
+        if (personais.length > 0)
+          for (let i = 0; i < personais.length; i++) {
+            const personal = (await collections.users!.findOne({
+              _id: new ObjectId(personais[i].toString()),
             })) as unknown as User;
 
-            if (latestMessages.every((message) => message.user != personal))
-              latestMessages.push({ user: fullUser, message: undefined });
-          });
-        if (currentUser.personalSubs)
-          currentUser.personalSubs.forEach(async (personal) => {
-            const fullUser = (await collections.users!.findOne({
-              _id: new ObjectId(personal.toString()),
-            })) as unknown as User;
-
-            if (latestMessages.every((message) => message.user != personal))
-              latestMessages.push({ user: fullUser, message: undefined });
-          });
+            if (latestMessages.every((message) => message.user != personais[i]))
+              latestMessages.push({ user: personal, message: undefined });
+          }
       }
 
       cResponse.status = "SUCCESS";
@@ -177,7 +169,6 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
     res.status(404).send(cResponse);
   }
 });
-
 
 /**
  *
