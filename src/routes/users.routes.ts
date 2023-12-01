@@ -490,7 +490,7 @@ usersRouter.put(
       )) as unknown as User;
 
       aluno.personalFlw = arrayRemove(aluno.personalFlw, personalId);
-      personal.followers = arrayRemove(aluno.followers, id);
+      personal.followers = arrayRemove(personal.followers, id);
 
       await collections.users!.updateOne(queryPersonal, {
         $set: { followers: personal.followers },
@@ -610,7 +610,7 @@ usersRouter.put(
       )) as unknown as User;
 
       aluno.personalSubs = arrayRemove(aluno.personalSubs, personalId);
-      personal.subscribers = arrayRemove(aluno.subscribers, id);
+      personal.subscribers = arrayRemove(personal.subscribers, id);
 
       await collections.users!.updateOne(queryPersonal, {
         $set: { subscribers: personal.subscribers },
