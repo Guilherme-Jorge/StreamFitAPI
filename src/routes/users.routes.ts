@@ -239,7 +239,7 @@ usersRouter.post("/", async (req: Request, res: Response) => {
         newUser.updatedAt = new Date();
 
         if (newUser.accountType == "aluno") {
-          newUser.plan = "free";
+          newUser.plan = "Plano Gratuito";
           newUser.personalFlw = [];
           newUser.personalSubs = [];
         } else {
