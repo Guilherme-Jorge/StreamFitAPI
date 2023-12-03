@@ -91,7 +91,7 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
         }
       });
 
-      const latestMessages: { user: any; message?: Message }[] = [];
+      const latestMessages: { user: User; message?: Message }[] = [];
 
       for (let i = 0; i < users.length; i++) {
         const newQuerySend = {
@@ -139,12 +139,13 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
         const personais = currentUser.personalSubs!;
         if (personais.length > 0)
           for (let i = 0; i < personais.length; i++) {
-            const personal = (await collections.users!.findOne({
-              _id: new ObjectId(personais[i].toString()),
-            })) as unknown as User;
+            if (!latestMessages.some((message) => message.user._id!.toString() == personais[i])) {
+              const personal = (await collections.users!.findOne({
+                _id: new ObjectId(personais[i].toString()),
+              })) as unknown as User;
 
-            if (latestMessages.every((message) => message.user != personais[i]))
               latestMessages.push({ user: personal, message: undefined });
+            }
           }
       }
 
