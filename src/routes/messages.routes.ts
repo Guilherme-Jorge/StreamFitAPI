@@ -75,92 +75,85 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
       .sort({ sentAt: -1 })
       .toArray()) as unknown as Message[];
 
-    if (messages.length != 0) {
-      const users: String[] = [];
-      messages.forEach((message) => {
-        if (
-          !users.includes(message.sendId) &&
-          message.sendId != req.params.id
-        ) {
-          users.push(message.sendId);
-        } else if (
-          !users.includes(message.recieveId) &&
-          message.recieveId != req.params.id
-        ) {
-          users.push(message.recieveId);
-        }
-      });
-
-      const latestMessages: { user: User; message?: Message }[] = [];
-
-      for (let i = 0; i < users.length; i++) {
-        const newQuerySend = {
-          $and: [{ sendId: users[i] as string }, { recieveId: req.params.id }],
-        };
-        const newQueryRecieve = {
-          $and: [{ sendId: req.params.id }, { recieveId: users[i] as string }],
-        };
-
-        const fullUser = (await collections.users!.findOne({
-          _id: new ObjectId(users[i].toString()),
-        })) as unknown as User;
-
-        const messageSend = (await collections
-          .messages!.find(newQuerySend)
-          .sort({ sentAt: -1 })
-          .limit(1)
-          .next()) as unknown as Message;
-
-        const messageRecieve = (await collections
-          .messages!.find(newQueryRecieve)
-          .sort({ sentAt: -1 })
-          .limit(1)
-          .next()) as unknown as Message;
-
-        if (messageSend != null && messageRecieve != null) {
-          if (messageSend.sentAt > messageRecieve.sentAt)
-            latestMessages.push({ user: fullUser, message: messageSend });
-          else
-            latestMessages.push({
-              user: fullUser,
-              message: messageRecieve,
-            });
-        } else if (messageSend == null && messageRecieve != null)
-          latestMessages.push({ user: fullUser, message: messageRecieve });
-        else if (messageSend != null && messageRecieve == null)
-          latestMessages.push({ user: fullUser, message: messageSend });
+    const users: String[] = [];
+    messages.forEach((message) => {
+      if (!users.includes(message.sendId) && message.sendId != req.params.id) {
+        users.push(message.sendId);
+      } else if (
+        !users.includes(message.recieveId) &&
+        message.recieveId != req.params.id
+      ) {
+        users.push(message.recieveId);
       }
+    });
 
-      const currentUser = (await collections.users!.findOne({
-        _id: new ObjectId(req.params.id),
+    const latestMessages: { user: User; message?: Message }[] = [];
+
+    for (let i = 0; i < users.length; i++) {
+      const newQuerySend = {
+        $and: [{ sendId: users[i] as string }, { recieveId: req.params.id }],
+      };
+      const newQueryRecieve = {
+        $and: [{ sendId: req.params.id }, { recieveId: users[i] as string }],
+      };
+
+      const fullUser = (await collections.users!.findOne({
+        _id: new ObjectId(users[i].toString()),
       })) as unknown as User;
 
-      if (currentUser.accountType == "aluno") {
-        const personais = currentUser.personalSubs!;
-        if (personais.length > 0)
-          for (let i = 0; i < personais.length; i++) {
-            if (!latestMessages.some((message) => message.user._id!.toString() == personais[i])) {
-              const personal = (await collections.users!.findOne({
-                _id: new ObjectId(personais[i].toString()),
-              })) as unknown as User;
+      const messageSend = (await collections
+        .messages!.find(newQuerySend)
+        .sort({ sentAt: -1 })
+        .limit(1)
+        .next()) as unknown as Message;
 
-              latestMessages.push({ user: personal, message: undefined });
-            }
-          }
-      }
+      const messageRecieve = (await collections
+        .messages!.find(newQueryRecieve)
+        .sort({ sentAt: -1 })
+        .limit(1)
+        .next()) as unknown as Message;
 
-      cResponse.status = "SUCCESS";
-      cResponse.message = `Latest messages for user ${req.params.id} where found`;
-      cResponse.payload = latestMessages;
-
-      res.status(200).send(cResponse);
-    } else {
-      cResponse.status = "ERROR";
-      cResponse.message = `Messages for user ${req.params.id} not found`;
-      cResponse.payload = undefined;
-
-      res.status(404).send(cResponse);
+      if (messageSend != null && messageRecieve != null) {
+        if (messageSend.sentAt > messageRecieve.sentAt)
+          latestMessages.push({ user: fullUser, message: messageSend });
+        else
+          latestMessages.push({
+            user: fullUser,
+            message: messageRecieve,
+          });
+      } else if (messageSend == null && messageRecieve != null)
+        latestMessages.push({ user: fullUser, message: messageRecieve });
+      else if (messageSend != null && messageRecieve == null)
+        latestMessages.push({ user: fullUser, message: messageSend });
     }
+
+    const currentUser = (await collections.users!.findOne({
+      _id: new ObjectId(req.params.id),
+    })) as unknown as User;
+
+    if (currentUser.accountType == "aluno") {
+      const personais = currentUser.personalSubs!;
+      if (personais.length > 0)
+        for (let i = 0; i < personais.length; i++) {
+          if (
+            !latestMessages.some(
+              (message) => message.user._id!.toString() == personais[i]
+            )
+          ) {
+            const personal = (await collections.users!.findOne({
+              _id: new ObjectId(personais[i].toString()),
+            })) as unknown as User;
+
+            latestMessages.push({ user: personal, message: undefined });
+          }
+        }
+    }
+
+    cResponse.status = "SUCCESS";
+    cResponse.message = `Latest messages for user ${req.params.id} where found`;
+    cResponse.payload = latestMessages;
+
+    res.status(200).send(cResponse);
   } catch (e) {
     cResponse.status = "ERROR";
     cResponse.message = `Messages for user ${req.params.id} not found`;
