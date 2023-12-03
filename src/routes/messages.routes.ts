@@ -131,23 +131,26 @@ messagesRouter.get("/:id", async (req: Request, res: Response) => {
       _id: new ObjectId(req.params.id),
     })) as unknown as User;
 
-    if (currentUser.accountType == "aluno") {
-      const personais = currentUser.personalSubs!;
-      if (personais.length > 0)
-        for (let i = 0; i < personais.length; i++) {
-          if (
-            !latestMessages.some(
-              (message) => message.user._id!.toString() == personais[i]
-            )
-          ) {
-            const personal = (await collections.users!.findOne({
-              _id: new ObjectId(personais[i].toString()),
-            })) as unknown as User;
+    let noMessageUsers: String[] = [];
+    if (currentUser.accountType == "personal")
+      noMessageUsers = currentUser.subscribers!;
+    if (currentUser.accountType == "aluno")
+      noMessageUsers = currentUser.personalSubs!;
 
-            latestMessages.push({ user: personal, message: undefined });
-          }
+    if (noMessageUsers.length > 0)
+      for (let i = 0; i < noMessageUsers.length; i++) {
+        if (
+          !latestMessages.some(
+            (message) => message.user._id!.toString() == noMessageUsers[i]
+          )
+        ) {
+          const noMessageUser = (await collections.users!.findOne({
+            _id: new ObjectId(noMessageUsers[i].toString()),
+          })) as unknown as User;
+
+          latestMessages.push({ user: noMessageUser, message: undefined });
         }
-    }
+      }
 
     cResponse.status = "SUCCESS";
     cResponse.message = `Latest messages for user ${req.params.id} where found`;
